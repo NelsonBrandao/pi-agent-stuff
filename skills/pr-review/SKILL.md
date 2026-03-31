@@ -70,18 +70,58 @@ gh pr diff | awk '/^diff --git.*<file>/{show=1} /^diff --git/ && !/'"<file>"'/{s
 
 Read the files mentioned in review comments and address the feedback.
 
-### 6. Reply to comments
-
-```bash
-gh api "repos/{owner}/{repo}/pulls/<number>/comments/<comment-id>/replies" -f body="Fixed — <explanation>"
-```
-
-### 7. Commit and push
+### 6. Commit and push
 
 Write a commit message that describes what actually changed, not just "address review feedback".
 
 ```bash
 git add -A && git commit -m "Refactor auth middleware to validate tokens before routing" && git push
+```
+
+### 7. Resolve or reply to comments
+
+For each review comment, decide based on whether action was taken:
+
+**If code changes were made to address the comment** — resolve the thread silently (no reply needed). Find the thread ID and resolve it:
+
+```bash
+gh api graphql -f query='
+  query($owner: String!, $repo: String!, $pr: Int!) {
+    repository(owner: $owner, name: $repo) {
+      pullRequest(number: $pr) {
+        reviewThreads(first: 100) {
+          nodes {
+            id
+            isResolved
+            comments(first: 1) {
+              nodes {
+                databaseId
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+' -f owner="{owner}" -f repo="{repo}" -F pr=<number>
+```
+
+Then resolve the thread using its GraphQL node ID:
+
+```bash
+gh api graphql -f query='
+  mutation($threadId: ID!) {
+    resolveReviewThread(input: {threadId: $threadId}) {
+      thread { isResolved }
+    }
+  }
+' -f threadId="<thread-node-id>"
+```
+
+**If no action was taken** (e.g., disagree, out of scope, already handled, intentional) — reply explaining why:
+
+```bash
+gh api "repos/{owner}/{repo}/pulls/<number>/comments/<comment-id>/replies" -f body="<explanation of why no action was taken>"
 ```
 
 ### 8. Verify CI
