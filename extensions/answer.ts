@@ -77,28 +77,20 @@ async function selectExtractionModel(
   currentModel: Model<Api>,
   modelRegistry: {
     find: (provider: string, modelId: string) => Model<Api> | undefined;
-    getApiKey: (model: Model<Api>) => Promise<string | undefined>;
+    hasConfiguredAuth: (model: Model<Api>) => boolean;
   },
 ): Promise<Model<Api>> {
   const codexModel = modelRegistry.find("openai-codex", CODEX_MODEL_ID);
-  if (codexModel) {
-    const apiKey = await modelRegistry.getApiKey(codexModel);
-    if (apiKey) {
-      return codexModel;
-    }
+  if (codexModel && modelRegistry.hasConfiguredAuth(codexModel)) {
+    return codexModel;
   }
 
   const haikuModel = modelRegistry.find("anthropic", HAIKU_MODEL_ID);
-  if (!haikuModel) {
-    return currentModel;
+  if (haikuModel && modelRegistry.hasConfiguredAuth(haikuModel)) {
+    return haikuModel;
   }
 
-  const apiKey = await modelRegistry.getApiKey(haikuModel);
-  if (!apiKey) {
-    return currentModel;
-  }
-
-  return haikuModel;
+  return currentModel;
 }
 
 /**
@@ -451,7 +443,8 @@ export default function (pi: ExtensionAPI) {
       loader.onAbort = () => done(null);
 
       const doExtract = async () => {
-        const apiKey = await ctx.modelRegistry.getApiKey(extractionModel);
+        const auth = await ctx.modelRegistry.getApiKeyAndHeaders(extractionModel);
+        const apiKey = auth.ok ? auth.apiKey : undefined;
         const userMessage: UserMessage = {
           role: "user",
           content: [{ type: "text", text: lastAssistantText! }],
