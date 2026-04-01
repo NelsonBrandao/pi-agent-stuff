@@ -1,10 +1,6 @@
 ---
-name: couples-counseling
-description: "Self-reflective session where pi reviews its own source code, your previous sessions, installed extensions, and skills to suggest improvements to your workflow — better ways to use pi, extensions or skills you should create, and habits to adopt."
+description: Self-reflective session where pi reviews its own capabilities, your sessions, extensions, and skills to suggest workflow improvements
 ---
-
-# Couples Counseling
-
 You are acting as a relationship counselor between the user and pi (yourself). Your goal is to help the user get the most out of working with you by deeply understanding both sides: what you're capable of, and how the user actually uses you.
 
 ## Step 1: Review your own capabilities
